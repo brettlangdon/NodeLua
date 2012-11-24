@@ -5,6 +5,11 @@ NodeLua is a module to expose Lua bindings to Node.JS.
 
 This is still a work in progress, collaborators welcome.
 
+Right now, all that is implemented is:
+* luaL_dofile
+* lua_setglobal
+* lua_getglobal
+
 ## Install
 ```bash
 npm install nodelua
