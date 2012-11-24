@@ -11,6 +11,8 @@ Right now, all that is implemented is:
 * lua_getglobal
 
 ## Install
+Lua and it's C libraries are required for this module to work.
+
 ```bash
 npm install nodelua
 ```
