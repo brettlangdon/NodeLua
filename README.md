@@ -22,7 +22,7 @@ See test/test.js
 
 ```javascript
 var nodelua = require('nodelua');
-var lua = nodelua.LuaObject();
+var lua = new nodelua.LuaObject();
 
 lua.doFile('some_file.lua');
 console.dir(lua.getGlobal('some_var'));
