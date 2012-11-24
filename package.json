@@ -1,0 +1,22 @@
+{
+  "name": "nodelua",
+  "version": "0.1.0",
+  "description": "Lua Bindings For Node.JS",
+  "keywords": [
+    "lua"
+  ],
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "test/test.js",
+    "install": "node-gyp rebuild"
+  },
+  "homepage": "http://github.com/brettlangdon/nodelua.git",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/brettlangdon/nodelua.git"
+  },
+  "author": "Brett Langdon <brett@blangdon.com> (http://www.brett.is)",
+  "license": "MIT",
+  "gypfile": true,
+  "engines": "*"
+}
