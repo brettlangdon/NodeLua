@@ -9,6 +9,15 @@ extern "C"{
 
 using namespace v8;
 
+void init_info_constants(Handle<Object> target){
+  Local<Object> constants = Object::New();
+  constants->Set(String::NewSymbol("VERSION"), String::New(LUA_VERSION));
+  constants->Set(String::NewSymbol("VERSION_NUM"), Number::New(LUA_VERSION_NUM));
+  constants->Set(String::NewSymbol("COPYRIGHT"), String::New(LUA_COPYRIGHT));
+  constants->Set(String::NewSymbol("AUTHORS"), String::New(LUA_AUTHORS));
+  target->Set(String::NewSymbol("INFO"), constants);
+}
+
 void init_status_constants(Handle<Object> target){
   Local<Object> constants = Object::New();
   constants->Set(String::NewSymbol("YIELD"), Number::New(LUA_YIELD));
@@ -36,5 +45,6 @@ void init(Handle<Object> target) {
   LuaObject::Init(target);
   init_gc_constants(target);
   init_status_constants(target);
+  init_info_constants(target);
 }
 NODE_MODULE(nodelua, init)

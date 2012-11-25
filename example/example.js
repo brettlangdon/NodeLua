@@ -1,6 +1,9 @@
 var path = require('path');
 var nodelua = require('../');
 
+console.log('Lua Info:');
+console.dir(nodelua.INFO);
+
 var lua = new nodelua.LuaObject();
 
 lua.registerFunction('test_func', function(a,b){

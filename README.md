@@ -23,7 +23,7 @@ The `NodeLua` module itself only contains a single object `LuaObject` used to in
 var lua = new nodelua.LuaObject()
 ```
 
-### STATUS
+#### STATUS
 `STATUS` is an object that contains the constants for values returned by `LuaObject.status()`.
 
 `nodelua.STATUS` conatins the following constants:
@@ -33,7 +33,7 @@ var lua = new nodelua.LuaObject()
  * `ERRMEM: 4`
  * `ERRERR: 5`
 
-## GC
+#### GC
 `GC` is an object of constants used for controlling the lua garbage collector.
 
 `nodelua.GC` conatins the following constants:
@@ -45,6 +45,15 @@ var lua = new nodelua.LuaObject()
  * `STEP: 5`
  * `SETPAUSE: 6`
  * `SETSTEPMUL: 7`
+
+#### INFO
+`INFO` is an object containing constants with information about the version of lua you are using.
+
+`nodelua.INFO` contains the following constants:
+ * `VERSION`
+ * `VERSION_NUM`
+ * `COPYRIGHT`
+ * `AUTHORS`
 
 ### LuaObject
 The `LuaObject` is an object wrapper around a `lua_State` instance.
