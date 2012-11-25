@@ -5,17 +5,70 @@ NodeLua is a module to expose Lua bindings to Node.JS.
 
 This is still a work in progress, collaborators welcome.
 
-Right now, all that is implemented is:
-* luaL_dofile
-* lua_setglobal
-* lua_getglobal
-
 ## Install
 Lua and it's C libraries are required for this module to work.
 
 ```bash
 npm install nodelua
 ```
+
+```javascript
+var nodelua = require('nodelua');
+```
+
+## API
+### NodeLua
+The `NodeLua` module itself only contains a single Object `LuaObject`.
+```javascript
+var lua = new nodelua.LuaObject()
+```
+
+### LuaObject
+The `LuaObject` is an object wrapper around a `lua_State` instance.
+
+#### doFile(file_name)
+The `doFile` method is used to load and execute lua code stored in `file_name`.
+```javascript
+lua.doFile('test.lua');
+```
+
+### doString(lua_code)
+The `doString` method is the same as `doFile` except the code is loaded from `lua_code` rather than from a file.
+```javascript
+lua.doString("print('Hello, Lua')");
+```
+
+### setGlobal(name, value)
+The `setGlobal` method is used to provide lua with the global variable `name` containing the value `value`.
+```javascript
+lua.setGlobal('test', 'value');
+```
+
+### getGlobal(name)
+The `getGlobal` method is used to retrieve either a value set by `setGlobal` or a global variable in any lua code that has been run.
+```javascript
+console.log(lua.getGlobal('test'));
+```
+
+### registerFunction(name, func)
+`registerFunction` is used to expose a javascript function `func` to lua with the name `name`.
+```javascript
+lua.registerFunction('add_them', function(a, b){
+  console.log(a+b);
+});
+```
+There are a few caveats with `registerFunction`.
+
+For starters in order to invoke the javascript function from within lua you must use an exposed `nodelua` function as opposed to using the functions registered `name`.
+```lua
+nodelua('add_them', 3, 5)
+```
+
+As well, there are problems with using `registerFunction` with multiple `LuaObjects`, you will probably end up with a `Segmentation fault: 11` error when running the code. I am working on this issue.
+
+### close()
+`close` should be used whenever you have finished using a `LuaObject`. This will simply call `lua_close` on the `lua_State` for that object.
+
 
 ## Example
 See test/test.js
@@ -24,9 +77,19 @@ See test/test.js
 var nodelua = require('nodelua');
 var lua = new nodelua.LuaObject();
 
+lua.registerFunction('add_them', function(a, b){
+  console.dir(a+b);
+});
+
 lua.doFile('some_file.lua');
 console.dir(lua.getGlobal('some_var'));
+
+lua.close()
 ```
+
+## TODO
+ * Currently there are issues with having multiple `LuaObjects`, this is my next task.
+ * I want to expose the stack functions from lua so it is easy to pop/push objects to lua.
 
 ## License
 The MIT License (MIT)
