@@ -18,10 +18,33 @@ var nodelua = require('nodelua');
 
 ## API
 ### NodeLua
-The `NodeLua` module itself only contains a single Object `LuaObject`.
+The `NodeLua` module itself only contains a single object `LuaObject` used to initialize a single `lua_State` as well as some constants.
 ```javascript
 var lua = new nodelua.LuaObject()
 ```
+
+### STATUS
+`STATUS` is an object that contains the constants for values returned by `LuaObject.status()`.
+
+`nodelua.STATUS` conatins the following constants:
+ * `YIELD: 1`
+ * `ERRRUN: 2`
+ * `ERRSYNTAX: 3`
+ * `ERRMEM: 4`
+ * `ERRERR: 5`
+
+## GC
+`GC` is an object of constants used for controlling the lua garbage collector.
+
+`nodelua.GC` conatins the following constants:
+ * `STOP: 0`
+ * `RESTART: 1`
+ * `COLLECT: 2`
+ * `COUNT: 3`
+ * `COUNTB: 4`
+ * `STEP: 5`
+ * `SETPAUSE: 6`
+ * `SETSTEPMUL: 7`
 
 ### LuaObject
 The `LuaObject` is an object wrapper around a `lua_State` instance.
@@ -66,9 +89,22 @@ nodelua('add_them', 3, 5)
 
 As well, there are problems with using `registerFunction` with multiple `LuaObjects`, you will probably end up with a `Segmentation fault: 11` error when running the code. I am working on this issue.
 
+### status()
+`status` will return the current status code for lua. The result can be `0` for normal or one of the error codes in `nodelua.STATUS`.
+```javascript
+if(lua.status() == nodelua.STATUS.ERRSYNTAX){
+  console.error('Lua Syntax Error');
+}
+```
+
+### collectGarbage(GC_CODE)
+`collectGarbage` is used to control the lua garbage collector. `GC_CODE` should be one of the codes taken from `nodelua.GC`.
+```javascript
+lua.collectGarbage(nodelua.GC.COLLECT);
+```
+
 ### close()
 `close` should be used whenever you have finished using a `LuaObject`. This will simply call `lua_close` on the `lua_State` for that object.
-
 
 ## Example
 See test/test.js
