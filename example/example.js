@@ -18,5 +18,4 @@ console.dir(lua.getGlobal('global_var'));
 var code = "print('Hello, Lua')";
 lua.doString(code);
 
-
-lua.close();
+console.log("Status: " + lua.status());
