@@ -26,6 +26,10 @@ void LuaObject::Init(Handle<Object> target) {
 				FunctionTemplate::New(SetGlobal)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("registerFunction"),
 				FunctionTemplate::New(RegisterFunction)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("status"),
+				FunctionTemplate::New(Status)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("collectGarbage"),
+				FunctionTemplate::New(CollectGarbage)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
 				FunctionTemplate::New(Close)->GetFunction());
 
@@ -51,6 +55,34 @@ Handle<Value> LuaObject::Close(const Arguments& args){
   LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
   lua_close(obj->lua_);
   return scope.Close(Undefined());
+}
+
+Handle<Value> LuaObject::Status(const Arguments& args){
+  HandleScope scope;
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  int status = lua_status(obj->lua_);
+  
+  return scope.Close(Number::New(status));
+}
+
+Handle<Value> LuaObject::CollectGarbage(const Arguments& args){
+  HandleScope scope;
+  
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
+    return scope.Close(Undefined());
+  }
+
+  if(!args[0]->IsNumber()){
+    ThrowException(Exception::TypeError(String::New("Argument 1 must be a number, try nodelua.GC")));
+    return scope.Close(Undefined());
+  }
+  
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  int type = (int)args[0]->ToNumber()->Value();
+  int gc = lua_gc(obj->lua_, type, 0);
+
+  return scope.Close(Number::New(gc));
 }
 
 Handle<Value> LuaObject::DoFile(const Arguments& args) {
