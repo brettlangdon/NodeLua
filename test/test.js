@@ -9,7 +9,7 @@ lua.doFile(test_file);
 
 lua.setGlobal("test", "value");
 lua.setGlobal("one", 1);
-lua.setGlobal("two", "two");
+lua.setGlobal("two", true);
 lua.setGlobal("none", null);
 
 console.dir(lua.getGlobal("one"));

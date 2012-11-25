@@ -97,6 +97,8 @@ Handle<Value> LuaObject::GetGlobal(const Arguments& args) {
     return scope.Close(Number::New((int)lua_tonumber(obj->lua_, -1)));
   }else if(lua_isstring(obj->lua_, -1)){
     return scope.Close(String::New((char *)lua_tostring(obj->lua_, -1)));
+  }else if(lua_isboolean(obj->lua_, -1)){
+    return scope.Close(Boolean::New((int)lua_toboolean(obj->lua_, -1)));
   }
 
   return scope.Close(Undefined());
@@ -130,6 +132,9 @@ Handle<Value> LuaObject::SetGlobal(const Arguments& args) {
   }else if(args[1]->IsNumber()){
     int value = args[1]->ToNumber()->Value();
     lua_pushinteger(obj->lua_, value);
+  }else if(args[1]->IsBoolean()){
+    int value = (int)args[1]->ToBoolean()->Value();
+    lua_pushboolean(obj->lua_, value);
   }else{
     lua_pushnil(obj->lua_);
   }
