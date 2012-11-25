@@ -7,7 +7,7 @@
   ],
   "main": "lib/index.js",
   "scripts": {
-    "test": "test/test.js",
+    "test": "",
     "install": "node-gyp rebuild"
   },
   "homepage": "http://github.com/brettlangdon/nodelua.git",
