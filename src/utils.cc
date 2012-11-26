@@ -29,3 +29,17 @@ v8::Local<v8::Value> lua_to_value(lua_State* L, int i){
     break;
   }
 }
+
+void push_value_to_lua(lua_State* L, v8::Handle<v8::Value> value){
+  if(value->IsString()){
+    lua_pushstring(L, get_str(v8::Local<v8::Value>::New(value)));
+  }else if(value->IsNumber()){
+    int i_value = value->ToNumber()->Value();
+    lua_pushinteger(L, i_value);
+  }else if(value->IsBoolean()){
+    int b_value = (int)value->ToBoolean()->Value();
+    lua_pushboolean(L, b_value);
+  }else{
+    lua_pushnil(L);
+  }
+}

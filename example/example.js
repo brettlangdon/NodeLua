@@ -6,9 +6,11 @@ console.dir(nodelua.INFO);
 
 var lua = new nodelua.LuaObject();
 
-lua.registerFunction('test_func', function(a,b){
+var func = new nodelua.LuaFunction('test_func', function(a,b){
 	console.dir(a+b);
     });
+lua.registerFunction(func);
+
 
 lua.setGlobal("test", 5);
 

@@ -1,14 +1,13 @@
 #define BUILDING_NODELUA
 #include <node.h>
 #include "luaobject.h"
-#include "utils.h"
 
 using namespace v8;
 
 LuaObject::LuaObject() {};
 LuaObject::~LuaObject() {};
 
-Local<Object> LuaObject::functions = Object::New();
+Persistent<Object> functions = Persistent<Object>(Object::New());
 
 void LuaObject::Init(Handle<Object> target) {
   // Prepare constructor template
@@ -41,10 +40,9 @@ Handle<Value> LuaObject::New(const Arguments& args) {
   HandleScope scope;
 
   LuaObject* obj = new LuaObject();
-  obj->functions = Object::New();
   obj->lua_ = lua_open();
   luaL_openlibs(obj->lua_);
-  lua_register(obj->lua_, "nodelua", obj->LuaFunction);
+  lua_register(obj->lua_, "nodelua", LuaObject::CallFunction);
   obj->Wrap(args.This());
 
   return args.This();
@@ -160,20 +158,7 @@ Handle<Value> LuaObject::SetGlobal(const Arguments& args) {
 
   LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
 
-  if(args[1]->IsString()){
-      String::AsciiValue value(args[1]);
-      char *value_str = (char *) malloc(value.length() + 1);
-      strcpy(value_str, *value);
-      lua_pushstring(obj->lua_, value_str);
-  }else if(args[1]->IsNumber()){
-    int value = args[1]->ToNumber()->Value();
-    lua_pushinteger(obj->lua_, value);
-  }else if(args[1]->IsBoolean()){
-    int value = (int)args[1]->ToBoolean()->Value();
-    lua_pushboolean(obj->lua_, value);
-  }else{
-    lua_pushnil(obj->lua_);
-  }
+  push_value_to_lua(obj->lua_, args[1]);
   lua_setglobal(obj->lua_, global_name);
 
   return scope.Close(Undefined());
@@ -183,28 +168,25 @@ Handle<Value> LuaObject::SetGlobal(const Arguments& args) {
 Handle<Value> LuaObject::RegisterFunction(const Arguments& args){
   HandleScope scope;
 
-  if(args.Length() < 2){
-    ThrowException(Exception::TypeError(String::New("Must Have 2 Arguments")));
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("Must Have 1 Argument")));
     return scope.Close(Undefined());
   }
 
-  if(!args[0]->IsString()){
-    ThrowException(Exception::TypeError(String::New("Argument 1 Must Be A String")));
-    return scope.Close(Undefined());
-  }
-  
-  if(!args[1]->IsFunction()){
-    ThrowException(Exception::TypeError(String::New("Argument 2 Must Be A Function")));
+  if(!args[0]->IsObject()){
+    ThrowException(Exception::TypeError(String::New("Argument 1 Must Be An Object")));
     return scope.Close(Undefined());
   }
 
-  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
-  obj->functions->Set(args[0]->ToString(), args[1]);
+  Handle<Object> handle = Handle<Object>::Cast(args[0]);
+  class LuaFunction* func = LuaFunction::unwrap(handle);
 
+  functions->Set(String::New(func->func_name),
+			    func->func_def_);
   return scope.Close(Undefined());
 }
 
-int LuaObject::LuaFunction(lua_State *L){
+int LuaObject::CallFunction(lua_State *L){
   int n = lua_gettop(L);
   if(n < 1){
     lua_pushstring(L, "must have at least 1 argument");
@@ -225,8 +207,12 @@ int LuaObject::LuaFunction(lua_State *L){
     argv[i-1] = lua_to_value(L, i+1);
   }
 
-  Local<Function> func = Local<Function>::Cast(LuaObject::functions->Get(func_name));
-  func->Call(Context::GetCurrent()->Global(), argc, argv);
-
-  return 0;   
+  Handle<Value> ret_val = Undefined();
+  if(functions->Has(func_name)){
+    Local<Function> func = Local<Function>::Cast(functions->Get(func_name));
+    ret_val = func->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+  
+  push_value_to_lua(L, ret_val);
+  return 1;
 }

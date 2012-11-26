@@ -3,6 +3,9 @@
 
 #include <node.h>
 
+#include "utils.h"
+#include "luafunction.h"
+
 extern "C"{
 #include <lua.h>
 #include <lauxlib.h>
@@ -12,8 +15,7 @@ extern "C"{
 class LuaObject : public node::ObjectWrap {
  public:
   static void Init(v8::Handle<v8::Object> target);
-  static int LuaFunction(lua_State *L);
-  static v8::Local<v8::Object> functions;
+  static int CallFunction(lua_State *L);
 
  private:
   LuaObject();
