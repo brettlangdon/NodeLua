@@ -1,5 +1,6 @@
 #define BUILDING_NODELUA
 #include <node.h>
+#include <map>
 #include "luaobject.h"
 
 using namespace v8;
@@ -7,7 +8,7 @@ using namespace v8;
 LuaObject::LuaObject() {};
 LuaObject::~LuaObject() {};
 
-Persistent<Object> functions = Persistent<Object>(Object::New());
+std::map<char *, Persistent<Function> > functions;
 
 void LuaObject::Init(Handle<Object> target) {
   // Prepare constructor template
@@ -31,6 +32,16 @@ void LuaObject::Init(Handle<Object> target) {
 				FunctionTemplate::New(CollectGarbage)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
 				FunctionTemplate::New(Close)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("push"),
+				FunctionTemplate::New(Push)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("pop"),
+				FunctionTemplate::New(Pop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("getTop"),
+				FunctionTemplate::New(GetTop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("setTop"),
+				FunctionTemplate::New(SetTop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("replace"),
+				FunctionTemplate::New(Replace)->GetFunction());
 
   Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
   target->Set(String::NewSymbol("LuaObject"), constructor);
@@ -164,6 +175,79 @@ Handle<Value> LuaObject::SetGlobal(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
+Handle<Value> LuaObject::Push(const Arguments& args) {
+  HandleScope scope;
+
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
+    return scope.Close(Undefined());
+  }
+
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+
+  push_value_to_lua(obj->lua_, args[0]);
+
+  return scope.Close(Undefined());
+}
+
+Handle<Value> LuaObject::Pop(const Arguments& args) {
+  HandleScope scope;
+
+  int pop_n = 1;
+  if(args.Length() > 0 && args[0]->IsNumber()){
+    pop_n = (int)args[0]->ToNumber()->Value();
+  }
+
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  lua_pop(obj->lua_, pop_n);
+
+  return scope.Close(Undefined());
+}
+
+Handle<Value> LuaObject::GetTop(const Arguments& args) {
+  HandleScope scope;
+
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  int n = lua_gettop(obj->lua_);
+
+  return scope.Close(Number::New(n));
+}
+
+Handle<Value> LuaObject::SetTop(const Arguments& args) {
+  HandleScope scope;
+
+  int set_n = 0;
+  if(args.Length() > 0 && args[0]->IsNumber()){
+    set_n = (int)args[0]->ToNumber()->Value();
+  }
+
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  lua_settop(obj->lua_, set_n);
+
+  return scope.Close(Undefined());
+}
+
+Handle<Value> LuaObject::Replace(const Arguments& args) {
+  HandleScope scope;
+
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("Must Have 1 Argument")));
+    return scope.Close(Undefined());
+  }
+
+  if(!args[0]->IsNumber()){
+    ThrowException(Exception::TypeError(String::New("Argument 1 Must Be A Number")));
+    return scope.Close(Undefined());
+  }
+
+  int index = (int)args[0]->ToNumber()->Value();
+
+  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
+  lua_replace(obj->lua_, index);
+
+  return scope.Close(Undefined());
+}
+
 
 Handle<Value> LuaObject::RegisterFunction(const Arguments& args){
   HandleScope scope;
@@ -181,8 +265,7 @@ Handle<Value> LuaObject::RegisterFunction(const Arguments& args){
   Handle<Object> handle = Handle<Object>::Cast(args[0]);
   class LuaFunction* func = LuaFunction::unwrap(handle);
 
-  functions->Set(String::New(func->func_name),
-			    func->func_def_);
+  functions[func->func_name] = func->func_def_;
   return scope.Close(Undefined());
 }
 
@@ -198,7 +281,7 @@ int LuaObject::CallFunction(lua_State *L){
     lua_error(L);
   }
 
-  Local<String> func_name = String::New((char *)lua_tostring(L, 1));
+  char * func_name = (char *)lua_tostring(L, 1);
 
   const unsigned argc = n - 1;
   Local<Value>* argv = new Local<Value>[argc];
@@ -208,9 +291,14 @@ int LuaObject::CallFunction(lua_State *L){
   }
 
   Handle<Value> ret_val = Undefined();
-  if(functions->Has(func_name)){
-    Local<Function> func = Local<Function>::Cast(functions->Get(func_name));
-    ret_val = func->Call(Context::GetCurrent()->Global(), argc, argv);
+
+  std::map<char *,Persistent<Function> >::iterator iter;
+  for(iter = functions.begin(); iter != functions.end(); iter++){
+    if(strcmp(iter->first, func_name) == 0){
+      Persistent<Function> func = iter->second;
+      ret_val = func->Call(Context::GetCurrent()->Global(), argc, argv);
+      break;
+    }
   }
   
   push_value_to_lua(L, ret_val);

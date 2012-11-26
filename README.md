@@ -18,7 +18,7 @@ var nodelua = require('nodelua');
 
 ## API
 ### NodeLua
-The `NodeLua` module itself only contains a single object `LuaObject` used to initialize a single `lua_State` as well as some constants.
+The `NodeLua` module itself contains the objects `LuaObject`, `LuaFunction`, as well as some constants.
 ```javascript
 var lua = new nodelua.LuaObject()
 ```
@@ -55,6 +55,25 @@ var lua = new nodelua.LuaObject()
  * `COPYRIGHT`
  * `AUTHORS`
 
+### LuaFunction
+The `LuaFunction` is used to initialize a javascript function for use by lua.
+
+One caveat to using `LuaFunction`s and multiple `LuaObject`s is that `LuaFunction`s regardless of which `LuaObject`
+they are registered with are visable to ALL `LuaObject`s.
+
+#### LuaFunction(func_name, func)
+The constructor for `LuaFunction` requires the `func_name` to use from within Lua (`nodelua('name')`) as well as the function itself `func`.
+```javascript
+var func = new nodelua.LuaFunction('test', function(){
+  console.log('This Is A Test');
+  return 42;
+});
+```
+
+#### name
+The `name` property of the `LuaFunction` is exposed, but it cannot be changed.
+
+
 ### LuaObject
 The `LuaObject` is an object wrapper around a `lua_State` instance.
 
@@ -64,30 +83,32 @@ The `doFile` method is used to load and execute lua code stored in `file_name`.
 lua.doFile('test.lua');
 ```
 
-### doString(lua_code)
+#### doString(lua_code)
 The `doString` method is the same as `doFile` except the code is loaded from `lua_code` rather than from a file.
 ```javascript
 lua.doString("print('Hello, Lua')");
 ```
 
-### setGlobal(name, value)
+#### setGlobal(name, value)
 The `setGlobal` method is used to provide lua with the global variable `name` containing the value `value`.
 ```javascript
 lua.setGlobal('test', 'value');
 ```
 
-### getGlobal(name)
+#### getGlobal(name)
 The `getGlobal` method is used to retrieve either a value set by `setGlobal` or a global variable in any lua code that has been run.
 ```javascript
 console.log(lua.getGlobal('test'));
 ```
 
-### registerFunction(name, func)
-`registerFunction` is used to expose a javascript function `func` to lua with the name `name`.
+#### registerFunction(func)
+`registerFunction` is used to expose a `LuaFunction` `func` to lua.
 ```javascript
-lua.registerFunction('add_them', function(a, b){
+var func = new nodelua.LuaFunction('add_them', function(a, b){
   console.log(a+b);
 });
+lua.registerFunction(func);
+lua.doString('nodelua("add_them", 2, 4)');
 ```
 There are a few caveats with `registerFunction`.
 
@@ -95,10 +116,9 @@ For starters in order to invoke the javascript function from within lua you must
 ```lua
 nodelua('add_them', 3, 5)
 ```
+All `LuaFunction`s registered with `registerFunction` is registered globally for all `LuaObject`s regardless of which object is used to register it.
 
-As well, there are problems with using `registerFunction` with multiple `LuaObjects`, you will probably end up with a `Segmentation fault: 11` error when running the code. I am working on this issue.
-
-### status()
+#### status()
 `status` will return the current status code for lua. The result can be `0` for normal or one of the error codes in `nodelua.STATUS`.
 ```javascript
 if(lua.status() == nodelua.STATUS.ERRSYNTAX){
@@ -106,13 +126,43 @@ if(lua.status() == nodelua.STATUS.ERRSYNTAX){
 }
 ```
 
-### collectGarbage(GC_CODE)
+#### collectGarbage(GC_CODE)
 `collectGarbage` is used to control the lua garbage collector. `GC_CODE` should be one of the codes taken from `nodelua.GC`.
 ```javascript
 lua.collectGarbage(nodelua.GC.COLLECT);
 ```
 
-### close()
+#### push(value)
+Push `value` onto the Lua stack.
+```javascript
+lua.push(5);
+```
+
+#### pop(num)
+Pop `num` items from the stack. Default is 1.
+```javascript
+lua.pop(5);
+```
+
+#### getTop()
+Return the number of elements on the Lua stack.
+```javascript
+var num = lua.getTop();
+```
+
+#### setTop(index)
+Set the top of the Lua stack to `index`.
+```javascript
+lua.setTop(3);
+```
+
+#### replace(index)
+Replaces the top stack element into the specified `index`
+```javascript
+lua.repalce(3);
+```
+
+#### close()
 `close` should be used whenever you have finished using a `LuaObject`. This will simply call `lua_close` on the `lua_State` for that object.
 
 ## Example
@@ -131,10 +181,6 @@ console.dir(lua.getGlobal('some_var'));
 
 lua.close()
 ```
-
-## TODO
- * Currently there are issues with having multiple `LuaObjects`, this is my next task.
- * I want to expose the stack functions from lua so it is easy to pop/push objects to lua.
 
 ## License
 The MIT License (MIT)

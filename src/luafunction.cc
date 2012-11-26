@@ -43,7 +43,7 @@ Handle<Value> LuaFunction::New(const Arguments& args) {
 
   LuaFunction* obj = new LuaFunction();
   obj->func_name = get_str(args[0]);
-  obj->func_def_ = Handle<Function>::Cast(args[1]);
+  obj->func_def_ = Persistent<Function>::New(Handle<Function>::Cast(args[1]));
   obj->Wrap(args.This());
 
   return args.This();

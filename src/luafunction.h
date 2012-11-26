@@ -15,7 +15,7 @@ class LuaFunction : public node::ObjectWrap {
   static LuaFunction* unwrap(v8::Handle<v8::Object> handle);
 
   char *func_name;
-  v8::Handle<v8::Function> func_def_;
+  v8::Persistent<v8::Function> func_def_;
  private:
   LuaFunction();
   ~LuaFunction();
