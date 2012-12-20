@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "utils.h"
 
 char * get_str(v8::Local<v8::Value> val){
