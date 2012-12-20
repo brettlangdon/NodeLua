@@ -6,6 +6,9 @@ NodeLua is a module to expose Lua bindings to Node.JS.
 This is still a work in progress, collaborators welcome.
 
 ## Install
+
+Requires Lua 5.1, will *not* work with 5.2
+
 Lua and it's C libraries are required for this module to work.
 
 ```bash
