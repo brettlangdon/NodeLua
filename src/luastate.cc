@@ -5,27 +5,27 @@ using namespace v8;
 
 uv_async_t async;
 
-struct do_file_baton{
+struct async_baton{
   Persistent<Function> callback;
-  char* file_name;
+  char* name;
   bool error;
   char msg[1000];
   LuaState* state;
 };
 
 void do_file(uv_work_t *req){
-  do_file_baton* baton = static_cast<do_file_baton*>(req->data);
+  async_baton* baton = static_cast<async_baton*>(req->data);
 
-  if(luaL_dofile(baton->state->lua_, baton->file_name)){
+  if(luaL_dofile(baton->state->lua_, baton->name)){
     baton->error = true;
-    sprintf(baton->msg, "Exception In File %s Has Failed:\n%s\n", baton->file_name, lua_tostring(baton->state->lua_, -1));
+    sprintf(baton->msg, "Exception In File %s Has Failed:\n%s\n", baton->name, lua_tostring(baton->state->lua_, -1));
   }
 }
 
-void do_file_after(uv_work_t *req){
+void async_after(uv_work_t *req){
   HandleScope scope;
 
-  do_file_baton* baton = (do_file_baton *)req->data;
+  async_baton* baton = (async_baton *)req->data;
 
   Local<Value> argv[2];
   const int argc = 2;
@@ -145,15 +145,15 @@ Handle<Value> LuaState::DoFile(const Arguments& args){
   }
 
   LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
-  do_file_baton* baton = new do_file_baton();
-  baton->file_name = file_name;
+  async_baton* baton = new async_baton();
+  baton->name = file_name;
   baton->callback = callback;
   baton->state = obj;
   obj->Ref();
 
   uv_work_t *req = new uv_work_t;
   req->data = baton;
-  uv_queue_work(uv_default_loop(), req, do_file, do_file_after);
+  uv_queue_work(uv_default_loop(), req, do_file, async_after);
 
   return scope.Close(Undefined());
 }
