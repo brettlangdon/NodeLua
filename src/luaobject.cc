@@ -16,14 +16,10 @@ void LuaObject::Init(Handle<Object> target) {
   tpl->SetClassName(String::NewSymbol("LuaObject"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   // Prototype
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("doFile"),
-				FunctionTemplate::New(DoFile)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("doString"),
 				FunctionTemplate::New(DoString)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("getGlobal"),
 				FunctionTemplate::New(GetGlobal)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("setGlobal"),
-				FunctionTemplate::New(SetGlobal)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("registerFunction"),
 				FunctionTemplate::New(RegisterFunction)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("status"),
@@ -70,13 +66,13 @@ Handle<Value> LuaObject::Status(const Arguments& args){
   HandleScope scope;
   LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
   int status = lua_status(obj->lua_);
-  
+
   return scope.Close(Number::New(status));
 }
 
 Handle<Value> LuaObject::CollectGarbage(const Arguments& args){
   HandleScope scope;
-  
+
   if(args.Length() < 1){
     ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
     return scope.Close(Undefined());
@@ -86,35 +82,13 @@ Handle<Value> LuaObject::CollectGarbage(const Arguments& args){
     ThrowException(Exception::TypeError(String::New("Argument 1 must be a number, try nodelua.GC")));
     return scope.Close(Undefined());
   }
-  
+
   LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
   int type = (int)args[0]->ToNumber()->Value();
   int gc = lua_gc(obj->lua_, type, 0);
 
   return scope.Close(Number::New(gc));
 }
-
-Handle<Value> LuaObject::DoFile(const Arguments& args) {
-  HandleScope scope;
-
-  if(args.Length() < 1){
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
-  }
-
-  char *file_name = get_str(args[0]);
-
-  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
-  if(luaL_dofile(obj->lua_, file_name)){
-    char buf[1000];
-    sprintf(buf, "Execution Of File %s Has Failed:\n%s\n", file_name, lua_tostring(obj->lua_, -1));
-    ThrowException(Exception::TypeError(String::New(buf)));
-    return scope.Close(Undefined());
-  }
-
-  return scope.Close(Undefined());
-}
-
 
 Handle<Value> LuaObject::DoString(const Arguments& args) {
   HandleScope scope;
@@ -156,24 +130,6 @@ Handle<Value> LuaObject::GetGlobal(const Arguments& args) {
   return scope.Close(val);
 }
 
-
-Handle<Value> LuaObject::SetGlobal(const Arguments& args) {
-  HandleScope scope;
-
-  if(args.Length() < 2){
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
-  }
-
-  char *global_name = get_str(args[0]);
-
-  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
-
-  push_value_to_lua(obj->lua_, args[1]);
-  lua_setglobal(obj->lua_, global_name);
-
-  return scope.Close(Undefined());
-}
 
 Handle<Value> LuaObject::Push(const Arguments& args) {
   HandleScope scope;
@@ -300,7 +256,7 @@ int LuaObject::CallFunction(lua_State *L){
       break;
     }
   }
-  
+
   push_value_to_lua(L, ret_val);
   return 1;
 }

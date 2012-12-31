@@ -1,8 +1,7 @@
 #include <node.h>
 #include <v8.h>
 
-#include "luaobject.h"
-#include "luafunction.h"
+#include "luastate.h"
 
 extern "C"{
 #include <lua.h>
@@ -43,8 +42,7 @@ void init_gc_constants(Handle<Object> target){
 }
 
 void init(Handle<Object> target) {
-  LuaObject::Init(target);
-  LuaFunction::Init(target);
+  LuaState::Init(target);
   init_gc_constants(target);
   init_status_constants(target);
   init_info_constants(target);
