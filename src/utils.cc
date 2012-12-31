@@ -25,6 +25,19 @@ v8::Local<v8::Value> lua_to_value(lua_State* L, int i){
   case LUA_TSTRING:
     return v8::String::New((char *)lua_tostring(L, i));
     break;
+  case LUA_TTABLE:
+    {
+      v8::Local<v8::Object> obj = v8::Object::New();
+      lua_pushnil(L);
+      while(lua_next(L, i-1) != 0){
+	v8::Local<v8::Value> key = lua_to_value(L, -2);
+	v8::Local<v8::Value> value = lua_to_value(L, -1);
+	obj->Set(key, value);
+	lua_pop(L, 1);
+      }
+      return obj;
+      break;
+    }
   default:
     return v8::Local<v8::Primitive>::New(v8::Undefined());
     break;
@@ -40,6 +53,17 @@ void push_value_to_lua(lua_State* L, v8::Handle<v8::Value> value){
   }else if(value->IsBoolean()){
     int b_value = (int)value->ToBoolean()->Value();
     lua_pushboolean(L, b_value);
+  }else if(value->IsObject()){
+    lua_newtable(L);
+    v8::Local<v8::Object> obj = value->ToObject();
+    v8::Local<v8::Array> keys = obj->GetPropertyNames();
+    for(uint32_t i = 0; i < keys->Length(); ++i){
+      v8::Local<v8::String> key = keys->Get(i)->ToString();
+      v8::Local<v8::Value> val = obj->Get(key);
+      push_value_to_lua(L, key);
+      push_value_to_lua(L, val);
+      lua_settable(L, -3);
+    }
   }else{
     lua_pushnil(L);
   }
