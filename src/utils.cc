@@ -58,7 +58,7 @@ void push_value_to_lua(lua_State* L, v8::Handle<v8::Value> value){
     v8::Local<v8::Object> obj = value->ToObject();
     v8::Local<v8::Array> keys = obj->GetPropertyNames();
     for(uint32_t i = 0; i < keys->Length(); ++i){
-      v8::Local<v8::String> key = keys->Get(i)->ToString();
+      v8::Local<v8::Value> key = keys->Get(i);
       v8::Local<v8::Value> val = obj->Get(key);
       push_value_to_lua(L, key);
       push_value_to_lua(L, val);
