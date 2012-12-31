@@ -15,7 +15,6 @@ struct async_baton{
   LuaState* state;
 };
 
-
 void do_file(uv_work_t *req){
   async_baton* baton = static_cast<async_baton*>(req->data);
 
@@ -389,11 +388,11 @@ Handle<Value> LuaState::RegisterFunction(const Arguments& args){
     return scope.Close(Undefined());
   }
 
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+
   Persistent<Function> func = Persistent<Function>::New(Local<Function>::Cast(args[1]));
   char* func_name = get_str(args[0]);
   functions[func_name] = func;
-
-  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
 
   lua_pushstring(obj->lua_, func_name);
   lua_pushcclosure(obj->lua_, CallFunction, 1);
