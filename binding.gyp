@@ -8,7 +8,6 @@
         },
       "sources": [
         "src/utils.cc",
-	"src/luafunction.cc",
         "src/luastate.cc",
 	"src/nodelua.cc"
 	],
