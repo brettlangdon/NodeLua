@@ -15,6 +15,15 @@ struct async_baton{
   LuaState* state;
 };
 
+struct simple_baton{
+  bool has_cb;
+  Persistent<Function> callback;
+  int data;
+  int result;
+  LuaState* state;
+};
+
+
 void do_file(uv_work_t *req){
   async_baton* baton = static_cast<async_baton*>(req->data);
 
@@ -24,6 +33,43 @@ void do_file(uv_work_t *req){
   }
 }
 
+
+void do_gc(uv_work_t *req){
+  simple_baton* baton = static_cast<simple_baton*>(req->data);
+
+  baton->result = lua_gc(baton->state->lua_, baton->data, 0);
+}
+
+
+void do_status(uv_work_t *req){
+  simple_baton* baton = static_cast<simple_baton*>(req->data);
+
+  baton->result = lua_status(baton->state->lua_);
+}
+
+
+void simple_after(uv_work_t *req){
+  HandleScope scope;
+
+  simple_baton* baton = static_cast<simple_baton*>(req->data);
+
+  const int argc = 1;
+  Local<Value> argv[] = { Number::New(baton->result) };
+
+  TryCatch try_catch;
+
+  if(baton->has_cb){
+    baton->callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+
+  baton->callback.Dispose();
+  delete baton;
+  delete req;
+
+  if(try_catch.HasCaught()){
+    node::FatalException(try_catch);
+  }
+}
 
 void do_string(uv_work_t *req){
   async_baton* baton = static_cast<async_baton*>(req->data);
@@ -65,7 +111,7 @@ void async_after(uv_work_t *req){
   delete baton;
   delete req;
 
-  if (try_catch.HasCaught()) {
+  if(try_catch.HasCaught()){
     node::FatalException(try_catch);
   }
 }
@@ -97,10 +143,19 @@ void LuaState::Init(Handle<Object> target){
 
   tpl->PrototypeTemplate()->Set(String::NewSymbol("status"),
 				FunctionTemplate::New(Status)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
-				FunctionTemplate::New(Close)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("statusSync"),
+				FunctionTemplate::New(StatusSync)->GetFunction());
+
   tpl->PrototypeTemplate()->Set(String::NewSymbol("collectGarbage"),
 				FunctionTemplate::New(CollectGarbage)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("collectGarbageSync"),
+				FunctionTemplate::New(CollectGarbageSync)->GetFunction());
+
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
+				FunctionTemplate::New(Close)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("getName"),
+				FunctionTemplate::New(GetName)->GetFunction());
+
 
   tpl->PrototypeTemplate()->Set(String::NewSymbol("registerFunction"),
 				FunctionTemplate::New(RegisterFunction)->GetFunction());
@@ -145,12 +200,29 @@ Handle<Value> LuaState::New(const Arguments& args){
     return ThrowException(Exception::TypeError(String::New("LuaState Requires The 'new' Operator To Create An Instance")));
   }
 
+  if(!args.Length() > 0){
+    return ThrowException(Exception::TypeError(String::New("LuaState Requires 1 Argument")));
+  }
+
+  if(!args[0]->IsString()){
+    return ThrowException(Exception::TypeError(String::New("LuaState First Argument Must Be A String")));
+  }
+
   LuaState* obj = new LuaState();
+  obj->name_ = get_str(args[0]);
   obj->lua_ = lua_open();
   luaL_openlibs(obj->lua_);
   obj->Wrap(args.This());
 
   return args.This();
+}
+
+
+Handle<Value> LuaState::GetName(const Arguments& args){
+  HandleScope scope;
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  return scope.Close(String::New(obj->name_));
 }
 
 
@@ -343,6 +415,31 @@ Handle<Value> LuaState::Close(const Arguments& args){
 Handle<Value> LuaState::Status(const Arguments& args){
   HandleScope scope;
   LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  simple_baton* baton = new simple_baton();
+  baton->state = obj;
+  obj->Ref();
+
+  if(args.Length() > 0 && !args[0]->IsFunction()){
+    ThrowException(Exception::TypeError(String::New("LuaState.status First Argument Must Be A Function")));
+    return scope.Close(Undefined());
+  }
+
+  if(args.Length() > 0){
+    baton->has_cb = true;
+    baton->callback = Persistent<Function>::New(Local<Function>::Cast(args[0]));
+  }
+
+  uv_work_t *req = new uv_work_t;
+  req->data = baton;
+  uv_queue_work(uv_default_loop(), req, do_status, simple_after);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::StatusSync(const Arguments& args){
+  HandleScope scope;
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
   int status = lua_status(obj->lua_);
 
   return scope.Close(Number::New(status));
@@ -359,6 +456,45 @@ Handle<Value> LuaState::CollectGarbage(const Arguments& args){
 
   if(!args[0]->IsNumber()){
     ThrowException(Exception::TypeError(String::New("LuaSatte.collectGarbage Argument 1 Must Be A Number, try nodelua.GC.[TYPE]")));
+    return scope.Close(Undefined());
+  }
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  int type = (int)args[0]->ToNumber()->Value();
+
+  simple_baton* baton = new simple_baton();
+  baton->data = type;
+  baton->state = obj;
+  obj->Ref();
+
+  if(args.Length() > 1 && !args[1]->IsFunction()){
+    ThrowException(Exception::TypeError(String::New("LuaState.collectGarbage Second Argument Must Be A Function")));
+    return scope.Close(Undefined());
+  }
+
+  if(args.Length() > 1){
+    baton->has_cb = true;
+    baton->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+  }
+
+  uv_work_t *req = new uv_work_t;
+  req->data = baton;
+  uv_queue_work(uv_default_loop(), req, do_gc, simple_after);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::CollectGarbageSync(const Arguments& args){
+  HandleScope scope;
+
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("LuaState.collectGarbageSync Requires 1 Argument")));
+    return scope.Close(Undefined());
+  }
+
+  if(!args[0]->IsNumber()){
+    ThrowException(Exception::TypeError(String::New("LuaSatte.collectGarbageSync Argument 1 Must Be A Number, try nodelua.GC.[TYPE]")));
     return scope.Close(Undefined());
   }
 
@@ -392,9 +528,11 @@ Handle<Value> LuaState::RegisterFunction(const Arguments& args){
 
   Persistent<Function> func = Persistent<Function>::New(Local<Function>::Cast(args[1]));
   char* func_name = get_str(args[0]);
-  functions[func_name] = func;
+  Local<String> func_key = String::Concat(String::New(func_name), String::New(":"));
+  func_key = String::Concat(func_key, String::New(obj->name_));
+  functions[get_str(func_key)] = func;
 
-  lua_pushstring(obj->lua_, func_name);
+  lua_pushstring(obj->lua_, get_str(func_key));
   lua_pushcclosure(obj->lua_, CallFunction, 1);
   lua_setglobal(obj->lua_, func_name);
 

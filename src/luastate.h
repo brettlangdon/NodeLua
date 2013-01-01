@@ -15,6 +15,7 @@ extern "C"{
 class LuaState : public node::ObjectWrap{
  public:
   lua_State* lua_;
+  char* name_;
 
   static void Init(v8::Handle<v8::Object> target);
   static int CallFunction(lua_State* L);
@@ -24,9 +25,15 @@ class LuaState : public node::ObjectWrap{
   ~LuaState();
 
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Status(const v8::Arguments& args);
   static v8::Handle<v8::Value> Close(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetName(const v8::Arguments& args);
+
   static v8::Handle<v8::Value> CollectGarbage(const v8::Arguments& args);
+  static v8::Handle<v8::Value> CollectGarbageSync(const v8::Arguments& args);
+
+  static v8::Handle<v8::Value> Status(const v8::Arguments& args);
+  static v8::Handle<v8::Value> StatusSync(const v8::Arguments& args);
+
 
   static v8::Handle<v8::Value> DoFileSync(const v8::Arguments& args);
   static v8::Handle<v8::Value> DoFile(const v8::Arguments& args);
