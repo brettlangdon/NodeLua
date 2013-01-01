@@ -4,30 +4,7 @@
 #include "luaobject.h"
 
 using namespace v8;
-
-LuaObject::LuaObject() {};
-LuaObject::~LuaObject() {};
-
-std::map<char *, Persistent<Function> > functions;
-
 void LuaObject::Init(Handle<Object> target) {
-  // Prepare constructor template
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-  tpl->SetClassName(String::NewSymbol("LuaObject"));
-  tpl->InstanceTemplate()->SetInternalFieldCount(1);
-  // Prototype
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("doString"),
-				FunctionTemplate::New(DoString)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("getGlobal"),
-				FunctionTemplate::New(GetGlobal)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("registerFunction"),
-				FunctionTemplate::New(RegisterFunction)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("status"),
-				FunctionTemplate::New(Status)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("collectGarbage"),
-				FunctionTemplate::New(CollectGarbage)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("close"),
-				FunctionTemplate::New(Close)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("push"),
 				FunctionTemplate::New(Push)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("pop"),
@@ -38,49 +15,7 @@ void LuaObject::Init(Handle<Object> target) {
 				FunctionTemplate::New(SetTop)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("replace"),
 				FunctionTemplate::New(Replace)->GetFunction());
-
-  Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
-  target->Set(String::NewSymbol("LuaObject"), constructor);
 }
-
-Handle<Value> LuaObject::New(const Arguments& args) {
-  HandleScope scope;
-
-  LuaObject* obj = new LuaObject();
-  obj->lua_ = lua_open();
-  luaL_openlibs(obj->lua_);
-  lua_register(obj->lua_, "nodelua", LuaObject::CallFunction);
-  obj->Wrap(args.This());
-
-  return args.This();
-}
-
-
-
-Handle<Value> LuaObject::CollectGarbage(const Arguments& args){
-  HandleScope scope;
-
-  if(args.Length() < 1){
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
-  }
-
-  if(!args[0]->IsNumber()){
-    ThrowException(Exception::TypeError(String::New("Argument 1 must be a number, try nodelua.GC")));
-    return scope.Close(Undefined());
-  }
-
-  LuaObject* obj = ObjectWrap::Unwrap<LuaObject>(args.This());
-  int type = (int)args[0]->ToNumber()->Value();
-  int gc = lua_gc(obj->lua_, type, 0);
-
-  return scope.Close(Number::New(gc));
-}
-
-
-
-
-
 
 Handle<Value> LuaObject::Push(const Arguments& args) {
   HandleScope scope;
