@@ -18,6 +18,7 @@ void init_info_constants(Handle<Object> target){
   target->Set(String::NewSymbol("INFO"), constants);
 }
 
+
 void init_status_constants(Handle<Object> target){
   Local<Object> constants = Object::New();
   constants->Set(String::NewSymbol("YIELD"), Number::New(LUA_YIELD));
@@ -27,6 +28,7 @@ void init_status_constants(Handle<Object> target){
   constants->Set(String::NewSymbol("ERRERR"), Number::New(LUA_ERRERR));
   target->Set(String::NewSymbol("STATUS"), constants);
 }
+
 
 void init_gc_constants(Handle<Object> target){
   Local<Object> constants = Object::New();
@@ -40,6 +42,7 @@ void init_gc_constants(Handle<Object> target){
   constants->Set(String::NewSymbol("SETSTEPMUL"), Number::New(LUA_GCSETSTEPMUL));
   target->Set(String::NewSymbol("GC"), constants);
 }
+
 
 void init(Handle<Object> target) {
   LuaState::Init(target);

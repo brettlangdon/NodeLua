@@ -156,9 +156,19 @@ void LuaState::Init(Handle<Object> target){
   tpl->PrototypeTemplate()->Set(String::NewSymbol("getName"),
 				FunctionTemplate::New(GetName)->GetFunction());
 
-
   tpl->PrototypeTemplate()->Set(String::NewSymbol("registerFunction"),
 				FunctionTemplate::New(RegisterFunction)->GetFunction());
+
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("push"),
+				FunctionTemplate::New(Push)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("pop"),
+				FunctionTemplate::New(Pop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("getTop"),
+				FunctionTemplate::New(GetTop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("setTop"),
+				FunctionTemplate::New(SetTop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("replace"),
+				FunctionTemplate::New(Replace)->GetFunction());
 
   Persistent<Function> constructor = Persistent<Function>::New(tpl->GetFunction());
   target->Set(String::NewSymbol("LuaState"), constructor);
@@ -308,7 +318,7 @@ Handle<Value> LuaState::DoStringSync(const Arguments& args) {
   if(luaL_dostring(obj->lua_, lua_code)){
     char buf[1000];
     sprintf(buf, "Execution Of Lua Code Has Failed:\n%s\n", lua_tostring(obj->lua_, -1));
-    ThrowException(Exception::TypeError(String::New(buf)));
+    ThrowException(Exception::Error(String::New(buf)));
     return scope.Close(Undefined());
   }
 
@@ -535,6 +545,84 @@ Handle<Value> LuaState::RegisterFunction(const Arguments& args){
   lua_pushstring(obj->lua_, get_str(func_key));
   lua_pushcclosure(obj->lua_, CallFunction, 1);
   lua_setglobal(obj->lua_, func_name);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::Push(const Arguments& args) {
+  HandleScope scope;
+
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("LuaState.push Requires 1 Argument")));
+    return scope.Close(Undefined());
+  }
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+
+  push_value_to_lua(obj->lua_, args[0]);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::Pop(const Arguments& args) {
+  HandleScope scope;
+
+  int pop_n = 1;
+  if(args.Length() > 0 && args[0]->IsNumber()){
+    pop_n = (int)args[0]->ToNumber()->Value();
+  }
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  lua_pop(obj->lua_, pop_n);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::GetTop(const Arguments& args) {
+  HandleScope scope;
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  int n = lua_gettop(obj->lua_);
+
+  return scope.Close(Number::New(n));
+}
+
+
+Handle<Value> LuaState::SetTop(const Arguments& args) {
+  HandleScope scope;
+
+  int set_n = 0;
+  if(args.Length() > 0 && args[0]->IsNumber()){
+    set_n = (int)args[0]->ToNumber()->Value();
+  }
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  lua_settop(obj->lua_, set_n);
+
+  return scope.Close(Undefined());
+}
+
+
+Handle<Value> LuaState::Replace(const Arguments& args) {
+  HandleScope scope;
+
+  if(args.Length() < 1){
+    ThrowException(Exception::TypeError(String::New("LuaState.replace Requires 1 Argument")));
+    return scope.Close(Undefined());
+  }
+
+  if(!args[0]->IsNumber()){
+    ThrowException(Exception::TypeError(String::New("LuaState.replace Argument 1 Must Be A Number")));
+    return scope.Close(Undefined());
+  }
+
+  int index = (int)args[0]->ToNumber()->Value();
+
+  LuaState* obj = ObjectWrap::Unwrap<LuaState>(args.This());
+  lua_replace(obj->lua_, index);
 
   return scope.Close(Undefined());
 }
