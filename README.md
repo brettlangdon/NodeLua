@@ -21,13 +21,13 @@ var nodelua = require('nodelua');
 
 ## API
 ### NodeLua
-The `NodeLua` module itself contains the objects `LuaObject`, `LuaFunction`, as well as some constants.
+The `NodeLua` module itself contains the object `LuaState` as well as some constants.
 ```javascript
-var lua = new nodelua.LuaObject()
+var lua = new nodelua.LuaState('lua')
 ```
 
 #### -- STATUS
-`STATUS` is an object that contains the constants for values returned by `LuaObject.status()`.
+`STATUS` is an object that contains the constants for values returned by `LuaState.status()` or `LuaState.statusSync()`.
 
 `nodelua.STATUS` conatins the following constants:
  * `YIELD: 1`
@@ -58,38 +58,52 @@ var lua = new nodelua.LuaObject()
  * `COPYRIGHT`
  * `AUTHORS`
 
-### LuaFunction
-The `LuaFunction` is used to initialize a javascript function for use by lua.
+### LuaState
+The `LuaState` is an object wrapper around a `lua_State` instance.
 
-One caveat to using `LuaFunction`s and multiple `LuaObject`s is that `LuaFunction`s regardless of which `LuaObject`
-they are registered with are visable to ALL `LuaObject`s.
+#### -- new LuaState(name)
+When creating a new `LuaState` you must provide it with a name, this is to help stop conflicts between registering functions.
+You should provide unique names to each `LuaState` instance.
 
-#### -- LuaFunction(func_name, func)
-The constructor for `LuaFunction` requires the `func_name` to use from within Lua (`nodelua('name')`) as well as the function itself `func`.
-```javascript
-var func = new nodelua.LuaFunction('test', function(){
-  console.log('This Is A Test');
-  return 42;
-});
-```
+#### -- getName()
+Returns the name provided when creating creating the `LuaState`
 
-#### -- name
-The `name` property of the `LuaFunction` is exposed, but it cannot be changed.
-
-
-### LuaObject
-The `LuaObject` is an object wrapper around a `lua_State` instance.
-
-#### -- doFile(file_name)
+#### -- doFile(file_name, callback)
 The `doFile` method is used to load and execute lua code stored in `file_name`.
 ```javascript
-lua.doFile('test.lua');
+lua.doFile('test.lua', function(error, ret_value){
+    if(!error && ret_value){
+      console.dir(ret_value);
+    } else{
+      console.error(error);
+    }
+  });
 ```
 
-#### -- doString(lua_code)
+#### -- doFileSync(file_name)
+This is the synchronous version of `doFile`, any value returned from the script is returned.
+```javascript
+var ret_value = lua.doFileSync('test.lua');
+console.dir(ret_value);
+```
+
+#### -- doString(lua_code, callback)
 The `doString` method is the same as `doFile` except the code is loaded from `lua_code` rather than from a file.
 ```javascript
-lua.doString("print('Hello, Lua')");
+lua.doString("print('Hello, Lua')", function(error, ret_value){
+    if(!error && ret_value){
+      console.dir(ret_value);
+    } else{
+      console.error(error);
+    }
+  });
+```
+
+####  -- doStringSync(lua_code)
+This is the synchronous version of `doString`, any value returned from the script is returned.
+```javascript
+var ret_value = lua.doString("return 5");
+console.dir(ret_value);
 ```
 
 #### -- setGlobal(name, value)
@@ -104,35 +118,46 @@ The `getGlobal` method is used to retrieve either a value set by `setGlobal` or 
 console.log(lua.getGlobal('test'));
 ```
 
-#### -- registerFunction(func)
-`registerFunction` is used to expose a `LuaFunction` `func` to lua.
+#### -- registerFunction(name, func)
+`registerFunction` is used to expose a javascript function to lua.
 ```javascript
-var func = new nodelua.LuaFunction('add_them', function(a, b){
-  console.log(a+b);
+lua.registerFunction('add_them', function(a, b){
+  return a + b;
 });
-lua.registerFunction(func);
-lua.doString('nodelua("add_them", 2, 4)');
+var ret_value = lua.doStringSync('return add_them(2, 4)');
+console.dir(ret_value);
 ```
-There are a few caveats with `registerFunction`.
 
-For starters in order to invoke the javascript function from within lua you must use an exposed `nodelua` function as opposed to using the functions registered `name`.
-```lua
-nodelua('add_them', 3, 5)
-```
-All `LuaFunction`s registered with `registerFunction` is registered globally for all `LuaObject`s regardless of which object is used to register it.
-
-#### -- status()
+#### -- status(callback)
 `status` will return the current status code for lua. The result can be `0` for normal or one of the error codes in `nodelua.STATUS`.
 ```javascript
-if(lua.status() == nodelua.STATUS.ERRSYNTAX){
-  console.error('Lua Syntax Error');
-}
+lua.status(function(code){
+    if(code == nodelua.STATUS.ERRSYNTAX){
+      console.error('Lua Syntax Error');
+    }
+  });
 ```
 
-#### -- collectGarbage(GC_CODE)
+#### -- statusSync()
+This is the synchronous version of `status`
+```javascript
+var code = lua.statusSync();
+console.dir(code);
+```
+
+#### -- collectGarbage(GC_CODE, callback)
 `collectGarbage` is used to control the lua garbage collector. `GC_CODE` should be one of the codes taken from `nodelua.GC`.
 ```javascript
-lua.collectGarbage(nodelua.GC.COLLECT);
+lua.collectGarbage(nodelua.GC.COLLECT, function(code){
+    console.dir(code);
+  });
+```
+
+#### -- collectGarbageSync(GC_CODE)
+This is the synchronous version of `collectGarbage`.
+```javascript
+var code = lua.collectGarbageSync(nodelua.GC.COLLECT);
+console.dir(code);
 ```
 
 #### -- push(value)
@@ -162,24 +187,25 @@ lua.setTop(3);
 #### -- replace(index)
 Replaces the top stack element into the specified `index`
 ```javascript
-lua.repalce(3);
+lua.replace(3);
 ```
 
 #### -- close()
-`close` should be used whenever you have finished using a `LuaObject`. This will simply call `lua_close` on the `lua_State` for that object.
+`close` should be used whenever you have finished using a `LuaState`. This will simply call `lua_close` on the `lua_State` for that object.
 
 ## Example
 See `./examples/`.
 ```javascript
 var nodelua = require('nodelua');
-var lua = new nodelua.LuaObject();
+var lua = new nodelua.LuaState('example');
 
-var func = new nodelua.LuaFunction('add_them', function(a, b){
+lua.registerFunction('add_them', function(a, b){
   return a + b;
 });
 
-lua.doFile('some_file.lua');
-console.dir(lua.getGlobal('some_var'));
+lua.doFile('some_file.lua', function(error, ret_value){
+    console.dir(lua.getGlobal('some_var'));  
+  });
 ```
 
 ## License
