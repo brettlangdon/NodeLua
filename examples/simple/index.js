@@ -1,11 +1,11 @@
 var nodelua = require('../../');
 
-var lua = new nodelua.LuaObject();
+var lua = new nodelua.LuaState('simple');
 
 lua.setGlobal('js_value', 500);
 
-lua.doString('print(js_value)');
-
-lua.doString('js_value = "something new"');
-
-console.dir(lua.getGlobal('js_value'));
+lua.doString('print("js_value: " .. js_value)', function(){
+	lua.doString('js_value = "something new"', function(){
+		console.log('js_value: ' + lua.getGlobal('js_value'));
+	    });
+    });
