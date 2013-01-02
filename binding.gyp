@@ -4,11 +4,11 @@
       "target_name": "nodelua",
       "variables": {
         "lua_include": "<!(find /usr/include /usr/local/include -name lua.h | sed s/lua.h//)",
-	"lua_version": "<!(lua -v 2>&1 | grep -oP '\d\.\d')"
+	"lua_version": "<!(lua -v 2>&1 | grep -o '\d\.\d')"
         },
       "sources": [
-      		 "src/utils.cc",
-		 "src/luafunction.cc",
+	"src/utils.cc",
+	"src/luafunction.cc",
         "src/luaobject.cc",
 	"src/nodelua.cc"
 	],
