@@ -76,7 +76,7 @@ void do_string(uv_work_t *req){
 
   if(luaL_dostring(baton->state->lua_, baton->data)){
     baton->error = true;
-    sprintf(baton->msg, "Exception Of Lua Code Has Failed:\n%s\n", baton->data, lua_tostring(baton->state->lua_, -1));
+    sprintf(baton->msg, "Exception Of Lua Code Has Failed:\n%s\n", lua_tostring(baton->state->lua_, -1));
   }
 }
 
