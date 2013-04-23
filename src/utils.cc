@@ -29,7 +29,7 @@ v8::Local<v8::Value> lua_to_value(lua_State* L, int i){
     {
       v8::Local<v8::Object> obj = v8::Object::New();
       lua_pushnil(L);
-      while(lua_next(L, i-1) != 0){
+      while(lua_next(L, -2) != 0){
 	v8::Local<v8::Value> key = lua_to_value(L, -2);
 	v8::Local<v8::Value> value = lua_to_value(L, -1);
 	obj->Set(key, value);
