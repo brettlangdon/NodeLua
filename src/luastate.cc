@@ -48,7 +48,7 @@ void do_status(uv_work_t *req){
 }
 
 
-void simple_after(uv_work_t *req){
+void simple_after(uv_work_t *req, int status){
   HandleScope scope;
 
   simple_baton* baton = static_cast<simple_baton*>(req->data);
@@ -81,7 +81,7 @@ void do_string(uv_work_t *req){
 }
 
 
-void async_after(uv_work_t *req){
+void async_after(uv_work_t *req, int status){
   HandleScope scope;
 
   async_baton* baton = (async_baton *)req->data;

@@ -1,6 +1,7 @@
 #ifndef LUAUTILS_H
 #define LUAUTILS_H
 
+#include <string.h>
 #include <node.h>
 
 extern "C"{
