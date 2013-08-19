@@ -1,6 +1,6 @@
 {
   "name": "nodelua",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Lua Bindings For Node.JS",
   "keywords": [
     "lua"
@@ -18,5 +18,8 @@
   "author": "Brett Langdon <brett@blangdon.com> (http://www.brett.is)",
   "license": "MIT",
   "gypfile": true,
-  "engines": "*"
+  "engines": {
+      "node": ">=0.8.0 <0.10.0"
+  },
+  "engineStrict": true
 }
