@@ -7,7 +7,7 @@ char * get_str(v8::Local<v8::Value> val){
     return NULL;
   }
 
-  v8::String::AsciiValue val_string(val);
+  v8::String::Utf8Value val_string(val);
   char * val_char_ptr = (char *) malloc(val_string.length() + 1);
   strcpy(val_char_ptr, *val_string);
   return val_char_ptr;
