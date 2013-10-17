@@ -1,6 +1,6 @@
 {
   "name": "nodelua",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Lua Bindings For Node.JS",
   "keywords": [
     "lua"
@@ -16,6 +16,9 @@
     "url": "git://github.com/brettlangdon/nodelua.git"
   },
   "author": "Brett Langdon <brett@blangdon.com> (http://www.brett.is)",
+  "contributors": [
+    "York Gu <gyq5319920@gmail.com> (http://blog.yorkgu.me)"
+  ],
   "license": "MIT",
   "gypfile": true,
   "engines": {
