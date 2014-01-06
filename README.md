@@ -37,10 +37,10 @@ $ pkg-config --libs-only-l --silence-errors lua || pkg-config --libs-only-l --si
 If instead they show nothing or an error then there are a few possible explanations:
 
 * Lua Libraries are not installed
-* * This can be remedied with something like `[sudo] apt-get install liblua5.1-dev`
+ * This can be remedied with something like `[sudo] apt-get install liblua5.1-dev`
 * Lua Libraries are not in an expected location `/usr/include/` or `/usr/local/include`
-* * This can be solved by setting install time environment variables `NODELUA_INCLUDE` and `NODELUA_FLAGS`
-* * `NODELUA_INCLUDE="/path/where/lua.h/is/" NODELUA_FLAGS="-llua5.1" npm install nodelua`
+ * This can be solved by setting install time environment variables `NODELUA_INCLUDE` and `NODELUA_FLAGS`
+ * `NODELUA_INCLUDE="/path/where/lua.h/is/" NODELUA_FLAGS="-llua5.1" npm install nodelua`
 
 
 ## API
