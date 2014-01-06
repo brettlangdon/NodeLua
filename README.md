@@ -19,6 +19,30 @@ npm install nodelua
 var nodelua = require('nodelua');
 ```
 
+### Environment Variables
+These two environment variables should really only be used when there are installation problems
+
+* `NODELUA_INCLUDE` - additional directory to search for lua.h in. example: `NODELUA_INCLUDE=/opt/lua`
+* `NODELUA_FLAGS` - additional library flags to use. example: `NODELUA_FLAGS=-llua5.1`
+
+## Installation Problems
+To try and narrow down where the error is coming from try running the following commands:
+```bash
+$ find /usr/include /usr/local/include -name lua.h | sed s/lua.h//
+/usr/include/lua5.1/
+$ pkg-config --libs-only-l --silence-errors lua || pkg-config --libs-only-l --silence-errors lua5.1
+-llua5.1
+```
+
+If instead they show nothing or an error then there are a few possible explanations:
+
+* Lua Libraries are not installed
+* * This can be remedied with something like `[sudo] apt-get install liblua5.1-dev`
+* Lua Libraries are not in an expected location `/usr/include/` or `/usr/local/include`
+* * This can be solved by setting install time environment variables `NODELUA_INCLUDE` and `NODELUA_FLAGS`
+* * `NODELUA_INCLUDE="/path/where/lua.h/is/" NODELUA_FLAGS="-llua5.1" npm install nodelua`
+
+
 ## API
 ### NodeLua
 The `NodeLua` module itself contains the object `LuaState` as well as some constants.
@@ -204,7 +228,7 @@ lua.registerFunction('add_them', function(a, b){
 });
 
 lua.doFile('some_file.lua', function(error, ret_value){
-    console.dir(lua.getGlobal('some_var'));  
+    console.dir(lua.getGlobal('some_var'));
   });
 ```
 
