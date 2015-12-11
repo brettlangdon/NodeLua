@@ -1,5 +1,6 @@
 NodeLua
 ======
+**This project is no longer maintained.**
 
 NodeLua is a module to expose Lua bindings to Node.JS.
 
